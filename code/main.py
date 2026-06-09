@@ -1,4 +1,5 @@
 import sys
+import time
 import numpy as np
 import sounddevice as sd
 import mido
@@ -107,13 +108,16 @@ def main():
         with sd.OutputStream(samplerate=SAMPLE_RATE, channels=1, 
                              callback=synth.audio_callback, latency='low'):
             
-            # open MIDI port and block the main thread waiting for events
+            # open MIDI port and process incoming messages
             with mido.open_input(selected_port) as inport:
-                for msg in inport:
-                    if msg.type == 'note_on':
-                        synth.note_on(msg.note, msg.velocity)
-                    elif msg.type == 'note_off':
-                        synth.note_off(msg.note)
+                #for msg in inport:
+                while True:
+                    for msg in inport.iter_pending():
+                        if msg.type == 'note_on':
+                            synth.note_on(msg.note, msg.velocity)
+                        elif msg.type == 'note_off':
+                            synth.note_off(msg.note)
+                    time.sleep(0.001) # sleep to allow catching ctrl-C interrupt
                         
     except KeyboardInterrupt:
         print("\nexiting...")
